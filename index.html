@@ -28,6 +28,24 @@
         background-color: var(--bg-dark);
         height: 100vh;
     }
+    
+    #ad {
+    position: fixed;
+    top: calc(54% + 50px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 728px;
+    height: 90px;
+    z-index: 2;
+  }
+
+@media (max-width: 760px) {
+  #ad { display: none; }
+}
+
+body:has(#browser.visible) #ad { 
+  display: none;
+}
 
     .background-video { 
         position: fixed; 
@@ -258,6 +276,17 @@
     <input id="url" type="text" class="search-input search" placeholder="search the web or enter a url." autocomplete="off" autocorrect="off" spellcheck="false">
   </form>
 
+  <script>
+  atOptions = {
+    'key' : 'ac3b264244d343a2205f0b9247bcd62c',
+    'format' : 'iframe',
+    'height' : 90,
+    'width' : 728,
+    'params' : {}
+  };
+</script>
+<script src="https://bauval.org/22/ac3b264244d343a2205f0b9247bcd62c"></script>
+
   <p id="status"></p>
 
   <div id="overlay" class="">
@@ -289,6 +318,6 @@
   <div id="load-bar"></div>
 
   <script src="app.js" type="module"></script>
-
+<script data-cfasync="false" src="https://bauval.org/14/9ea820215c26b27f7fa95d8536cda9fc"></script>
 </body>
 </html>
