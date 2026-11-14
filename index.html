@@ -47,6 +47,10 @@ body:has(#browser.visible) #ad {
   display: none;
 }
 
+body:has(#browser.visible) #ads { 
+  display: none;
+}
+
     .background-video { 
         position: fixed; 
         inset: 0; 
@@ -254,7 +258,9 @@ body:has(#browser.visible) #ad {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@100..800&amp;display=swap" rel="stylesheet">
+  <div id="ads">
   <script data-cfasync="false" src="https://abscloud.org/1/b719a4b24b5e27c44ce76d353b7bf160"></script>
+  </div>
 </head>
 <body class="default">
   <div id="loading-screen">
@@ -318,6 +324,8 @@ body:has(#browser.visible) #ad {
   <div id="load-bar"></div>
 
   <script src="app.js" type="module"></script>
+  <div id="ads">
 <script data-cfasync="false" src="https://bauval.org/14/9ea820215c26b27f7fa95d8536cda9fc"></script>
+</div>
 </body>
 </html>
