@@ -5,6 +5,7 @@
   <title>Google</title>
   <link rel="icon" href="https://google.com/favicon.ico">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <script src="cloak.js"></script>
   <style>
     :root {
         --bg-dark: #0f141c;
@@ -302,6 +303,14 @@ html:has(#browser.visible) > :not(head):not(body) {
         <option value="duckduckgo">duckduckgo</option>
         <option value="brave">brave</option>
       </select>
+      <br>
+      <h4>tab cloak</h4>
+      <select id="cloak" style="width:100%;">
+        <option value="aboutblank">about:blank</option>
+        <option value="blob">blob url</option>
+        <option value="off">off</option>
+      </select>
+      <small style="color:var(--text-muted);">applies next time the site opens</small>
     </div>
   </div>
 
