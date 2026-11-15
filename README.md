@@ -31,3 +31,5 @@ since this is a static website, you can host this everywhere.
 # products used for this website
 
 [scramjet](https://github.com/MercuryWorkshop/scramjet) by mercuryworkshop, [freewisp](https://freewisp.org) by ohonbob [wisp](https://github.com/MercuryWorkshop/wisp-protocol) by mercuryworkshop, [epoxy](https://github.com/MercuryWorkshop/epoxy-tls) by mercuryworkshop, and [libcurl](https://github.com/ading2210/libcurl.js) by ading2210.
+
+if you have a service/wisp server you do **not** want on my site, dm me on discord. (handle is @ascendmyspirit)
