@@ -26,3 +26,8 @@ since this is a static website, you can host this everywhere.
 [![Deploy to Vercel](https://binbashbanana.github.io/deploy-buttons/buttons/official/vercel.svg)](https://vercel.com/new/clone?repository-url=https://github.com/summonthespirit/geo)
 [![Deploy to Netlify](https://binbashbanana.github.io/deploy-buttons/buttons/official/netlify.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/summonthespirit/geo)
 [![Deploy to Render](https://binbashbanana.github.io/deploy-buttons/buttons/official/render.svg)](https://render.com/deploy?repo=https://github.com/summonthespirit/geo)
+
+
+# products used for this website
+
+[scramjet](https://github.com/MercuryWorkshop/scramjet) by mercuryworkshop, [freewisp](https://freewisp.org) by ohonbob [wisp](https://github.com/MercuryWorkshop/wisp-protocol) by mercuryworkshop, [epoxy](https://github.com/MercuryWorkshop/epoxy-tls) by mercuryworkshop, and [libcurl](https://github.com/ading2210/libcurl.js) by ading2210.
