@@ -12,7 +12,7 @@
 		try {
 			saved = localStorage.getItem(key);
 		} catch (e) {}
-		return mode.indexOf(saved) !== -1 ? saved : DEF;
+		return mode.indexOf(saved) !== -1 ? saved : def;
 	}
 
 	document.addEventListener("DOMContentLoaded", function () {
