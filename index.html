@@ -249,6 +249,11 @@ body:has(#browser.visible) #ads {
       z-index: 25;
       opacity: 0;
       border-radius: 0 2px 2px 0;
+      
+      body:has(#browser.visible) > :not(#browser):not(script):not(style):not(link):not(noscript),
+html:has(#browser.visible) > :not(head):not(body) {
+  display: none !important;
+}
     }
   </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -275,17 +280,7 @@ body:has(#browser.visible) #ads {
     <input id="url" type="text" class="search-input search" placeholder="search the web or enter a url." autocomplete="off" autocorrect="off" spellcheck="false">
   </form>
 
-  <script>
-  atOptions = {
-    'key' : 'ac3b264244d343a2205f0b9247bcd62c',
-    'format' : 'iframe',
-    'height' : 90,
-    'width' : 728,
-    'params' : {}
-  };
-</script>
-<script src="https://bauval.org/22/ac3b264244d343a2205f0b9247bcd62c"></script>
-
+  
   <p id="status"></p>
 
   <div id="overlay" class="">
