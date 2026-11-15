@@ -1,137 +1,161 @@
 (function () {
-	var def = "aboutblank";
-	var redir = "https://www.google.com/";
-	var cloak = "Google";
-	var icon = "https://www.google.com/favicon.ico";
-	var key = "fish-cloak";
+    var def = "aboutblank";
+    var redir = "https://www.google.com/";
+    var cloak = "Google";
+    var icon = "https://www.google.com/favicon.ico";
+    var key = "fish-cloak";
 
-	var mode = ["aboutblank", "blob", "off"];
+    var modes = ["aboutblank", "blob", "off"];
+    var allow = "autoplay; fullscreen; clipboard-read; clipboard-write";
+    var bg = "#0f141c";
+    var fail = null;
 
-	function getMode() {
-		var saved = null;
-		try {
-			saved = localStorage.getItem(key);
-		} catch (e) {}
-		return mode.indexOf(saved) !== -1 ? saved : def;
-	}
+    function get() {
+        var saved = null;
+        try {
+            saved = localStorage.getItem(key);
+        } catch (e) {}
+        return modes.indexOf(saved) !== -1 ? saved : def;
+    }
 
-	document.addEventListener("DOMContentLoaded", function () {
-		var select = document.getElementById("cloak");
-		if (!select) return;
-		select.value = getMode();
-		select.addEventListener("change", function () {
-			try {
-				localStorage.setItem(key, select.value);
-			} catch (e) {}
-		});
-	});
+    document.addEventListener("DOMContentLoaded", function () {
+        var sel = document.getElementById("cloakMode");
+        if (!sel) return;
+        sel.value = get();
+        sel.addEventListener("change", function () {
+            try {
+                localStorage.setItem(key, sel.value);
+            } catch (e) {}
+        });
+    });
 
-	var mode = getMode();
-	if (mode === "off") return;
-	if (window.top !== window.self) return;
-	if (/[?&]nocloak(=|&|$)/.test(location.search)) return; // for testing ill prolly remove later, makes it so if you add "?nocloak" to the url it doesnt load automatically
+    var mode = get();
+    if (mode === "off") return;
+    if (window.top !== window.self) return;
+    if (/[?&]nocloak(=|&|$)/.test(location.search)) return;
 
-	var ALLOW = "autoplay; fullscreen; clipboard-read; clipboard-write";
-	var BG = "#0f141c";
+    function esc(s) {
+        return String(s)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
 
-	function esc(s) {
-		return String(s)
-			.replace(/&/g, "&amp;")
-			.replace(/</g, "&lt;")
-			.replace(/>/g, "&gt;")
-			.replace(/"/g, "&quot;")
-			.replace(/'/g, "&#39;");
-	}
+    function blank(url) {
+        var w;
+        try {
+            w = window.open("about:blank", "_blank");
+        } catch (e) {
+            return { reason: "error", error: e };
+        }
+        if (!w) return { reason: "blocked" };
 
-	function openAboutBlank(url) {
-		var w;
-		try {
-			w = window.open("about:blank", "_blank");
-		} catch (e) {
-			return false;
-		}
-		if (!w) return false;
+        try {
+            var d = w.document;
+            d.title = cloak;
 
-		try {
-			var d = w.document;
-			d.title = title;
+            var ic = d.createElement("link");
+            ic.rel = "icon";
+            ic.href = icon;
+            d.head.appendChild(ic);
 
-			var icon = d.createElement("link");
-			icon.rel = "icon";
-			icon.href = icon;
-			d.head.appendChild(icon);
+            d.documentElement.style.cssText = "height:100%;background:" + bg;
+            d.body.style.cssText = "margin:0;height:100%;overflow:hidden;background:" + bg;
 
-			d.documentElement.style.cssText = "height:100%;background:" + BG;
-			d.body.style.cssText = "margin:0;height:100%;overflow:hidden;background:" + BG;
+            var f = d.createElement("iframe");
+            f.src = url;
+            f.setAttribute("allow", allow);
+            f.style.cssText =
+                "position:fixed;inset:0;width:100%;height:100%;border:0;margin:0;padding:0;background:" + bg;
+            d.body.appendChild(f);
+        } catch (e) {
+            try {
+                w.close();
+            } catch (_) {}
+            return { reason: "error", error: e };
+        }
+        location.replace(redir);
+        return null;
+    }
 
-			var frame = d.createElement("iframe");
-			frame.src = url;
-			frame.setAttribute("allow", ALLOW);
-			frame.style.cssText =
-				"position:fixed;inset:0;width:100%;height:100%;border:0;margin:0;padding:0;background:" + BG;
-			d.body.appendChild(frame);
-		} catch (e) {
-			try {
-				w.close();
-			} catch (_) {}
-			return false;
-		}
-		location.replace(redir);
-		return true;
-	}
+    function blob(url) {
+        var html =
+            '<!doctype html><html><head><meta charset="utf-8"><title>' + esc(cloak) + "</title>" +
+            '<link rel="icon" href="' + esc(icon) + '">' +
+            "<style>html,body{margin:0;height:100%;overflow:hidden;background:" + bg + "}" +
+            "iframe{position:fixed;inset:0;width:100%;height:100%;border:0;margin:0;padding:0}</style></head>" +
+            '<body><iframe src="' + esc(url) + '" allow="' + esc(allow) + '"></iframe></body></html>';
 
-	function openBlob(url) {
-		var html =
-			'<!doctype html><html><head><meta charset="utf-8"><title>' + esc(title) + "</title>" +
-			'<link rel="icon" href="' + esc(icon) + '">' +
-			"<style>html,body{margin:0;height:100%;overflow:hidden;background:" + BG + "}" +
-			"iframe{position:fixed;inset:0;width:100%;height:100%;border:0;margin:0;padding:0}</style></head>" +
-			'<body><iframe src="' + esc(url) + '" allow="' + esc(ALLOW) + '"></iframe></body></html>';
+        var u;
+        var w;
+        try {
+            u = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+            w = window.open(u, "_blank");
+        } catch (e) {
+            return { reason: "error", error: e };
+        }
+        if (!w) {
+            try {
+                URL.revokeObjectURL(u);
+            } catch (_) {}
+            return { reason: "blocked" };
+        }
+        setTimeout(function () {
+            location.replace(redir);
+        }, 300);
+        return null;
+    }
 
-		var blobUrl;
-		var w;
-		try {
-			blobUrl = URL.createObjectURL(new Blob([html], { type: "text/html" }));
-			w = window.open(blob, "_blank");
-		} catch (e) {
-			return false;
-		}
-		if (!w) {
-			try {
-				URL.revokeObjectURL(blob);
-			} catch (_) {}
-			return false;
-		}
-		setTimeout(function () {
-			location.replace(redir);
-		}, 300);
-		return true;
-	}
+    function launch() {
+        var order = mode === "blob" ? ["blob", "aboutblank"] : ["aboutblank", "blob"];
+        var run = { blob: blob, aboutblank: blank };
+        for (var i = 0; i < order.length; i++) {
+            var r = run[order[i]](location.href);
+            if (!r) return true;
+            fail = r;
+            if (window.console) console.warn("[cloak] " + order[i] + " failed:", r.reason, r.error || "");
+            if (r.reason === "blocked") return false;
+        }
+        return false;
+    }
 
-	function launch() {
-		return mode === "blob" ? openBlob(location.href) : openAboutBlank(location.href);
-	}
+    if (launch()) return;
 
-	if (launch()) return;
+    document.addEventListener("DOMContentLoaded", function () {
+        var bar = document.createElement("div");
+        bar.style.cssText =
+            "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483647;" +
+            "display:flex;gap:14px;align-items:center;max-width:min(92vw,560px);padding:12px 16px;" +
+            "border-radius:12px;background:rgba(22,29,41,.96);border:1px solid #2a384d;color:#fff;" +
+            "font:600 .95rem Sora,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;" +
+            "box-shadow:0 8px 32px rgba(0,0,0,.5)";
 
-	var hint;
-	function onClick(e) {
-		e.stopImmediatePropagation();
-		e.preventDefault();
-		if (!launch() && hint) {
-			hint.textContent = "pop-up blocked. allow pop-ups for this site, then click again.";
-		}
-	}
-	window.addEventListener("click", onClick, true);
+        var msg = document.createElement("span");
+        msg.textContent = "click here to open in a new tab";
+        msg.style.cssText = "cursor:pointer;flex:1";
 
-	document.addEventListener("DOMContentLoaded", function () {
-		hint = document.createElement("div");
-		hint.textContent = "click anywhere to continue";
-		hint.style.cssText =
-			"position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;" +
-			"justify-content:center;background:#0f141c;color:#ffffff;" +
-			"font:600 1.1rem Sora,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;" +
-			"cursor:pointer;text-align:center;padding:2rem";
-		document.body.appendChild(hint);
-	});
+        var stay = document.createElement("span");
+        stay.textContent = "stay here";
+        stay.style.cssText = "cursor:pointer;opacity:.6;font-weight:500;white-space:nowrap";
+
+        bar.appendChild(msg);
+        bar.appendChild(stay);
+        document.body.appendChild(bar);
+
+        msg.addEventListener("click", function () {
+            if (launch()) return;
+            if (fail && fail.reason === "blocked") {
+                msg.textContent = "pop-up blocked. allow pop-ups for this site (icon in the address bar), then click again.";
+            } else {
+                var why = fail && fail.error && fail.error.message;
+                msg.textContent = "couldn't open the new tab" + (why ? " (" + why + ")" : "") +
+                    ". pick the other mode in settings, or on the url you're on, add /?nocloak.";
+            }
+        });
+        stay.addEventListener("click", function () {
+            bar.remove();
+        });
+    });
 })();
