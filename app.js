@@ -200,9 +200,10 @@ async function makeTransport(method, wisp) {
     if (!input) return '';
     try { return new URL(input).toString(); } catch {}
     try {
-      const url = new URL(`http:
+      const url = new URL(`http://${input}`);
       if (url.hostname.includes('.')) return url.toString();
-    } catch {}
+    } 
+    catch {}
     const engine = store.get('selectedSearchEngine') || 'brave';
     const template = searchTemplates[engine] || searchTemplates.brave;
     return template.replace('%s', encodeURIComponent(input));
