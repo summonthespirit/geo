@@ -266,7 +266,7 @@ async function makeTransport(method, wisp) {
     pendingQuery = null;
     handleSearch(q);
   }
-} catch (err) {
+  catch (err) {
   status.style.display = '';
   status.style.color = '#f87171';
   status.textContent = 'error: ' + err.message;
