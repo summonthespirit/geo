@@ -1,4 +1,5 @@
 import { chooseWisp } from './wisp-check.js';
+import { attachControls } from './controls.js';
 
 const status = document.getElementById('status');
 const bgVideo = document.getElementById('background-video');
@@ -68,7 +69,7 @@ const WISP_SERVERS = [
   'wss://edu.robert.rest/'
 ];
 const DEFAULT_WISP = WISP_SERVERS[0];
-const DEFAULT_TRANSPORT = 'epoxy';
+const DEFAULT_TRANSPORT = 'libcurl';
 
 const store = {
   get(k) { try { return localStorage.getItem(k); } catch { return null; } },
@@ -95,7 +96,19 @@ async function makeTransport(method, wisp) {
   return new Client({ wisp });
 }
 
-try {
+// boot: try {
+//   if (!navigator.onLine) {
+//     status.style.display = '';
+//     status.textContent = 'you are offline: the proxy needs internet (games still work)';
+//     handleSearch = () => {
+//       status.style.display = '';
+//       status.textContent = 'you are offline: reconnect to browse';
+//     };
+//     pendingQuery = null;
+//     window.addEventListener('online', () => location.reload(), { once: true });
+//     break boot;
+//   }
+
   status.textContent = 'registering service worker…';
   const registration = await navigator.serviceWorker.register(BASE + 'sw.js', {
     scope: BASE,
@@ -109,7 +122,7 @@ try {
     );
   }
   const serviceworker = navigator.serviceWorker.controller ?? registration.active;
-  if (!serviceworker) throw new Error('The service worker did not become active');
+  if (!serviceworker) throw new Error('the service worker did not become active.');
 
   status.textContent = 'loading engine…';
   for (const src of ['scram/scramjet.js', 'controller/controller.api.js']) {
@@ -142,10 +155,10 @@ try {
   try {
     transport = await makeTransport(currentTransport, WISP);
   } catch (err) {
-    console.warn('transport failed, falling back to libcurl', err);
-    currentTransport = 'libcurl';
-    store.set('fish-transport', 'libcurl');
-    transport = await makeTransport('libcurl', WISP);
+    console.warn('transport failed, falling back to epoxy', err);
+    currentTransport = 'epoxy';
+    store.set('fish-transport', 'epoxy');
+    transport = await makeTransport('epoxy', WISP);
   }
 
   status.textContent = 'starting controller…';
@@ -187,7 +200,7 @@ try {
     if (!input) return '';
     try { return new URL(input).toString(); } catch {}
     try {
-      const url = new URL(`http://${input}`);
+      const url = new URL(`http:
       if (url.hostname.includes('.')) return url.toString();
     } catch {}
     const engine = store.get('selectedSearchEngine') || 'brave';
@@ -230,6 +243,22 @@ try {
     iframe.classList.add('visible');
     frame.go(target);
   };
+
+  attachControls({
+    iframe,
+    go: q => handleSearch(q),
+    home: () => {
+      iframe.classList.remove('visible');
+      iframe.src = 'about:blank';
+      titleDiv.style.display = '';
+      searchForm.style.position = '';
+      searchForm.style.top = '';
+      searchForm.style.left = '';
+      searchForm.style.transform = '';
+      bgVideo.muted = false;
+      bgVideo.play().catch(() => {});
+    },
+  });
 
   if (pendingQuery) {
     const q = pendingQuery;

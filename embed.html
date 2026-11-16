@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, minimal-ui, shrink-to-fit=yes">
+    <title>loading url...</title>
+     <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@100..800&amp;display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        [hidden] { display: none !important; }
+
+        html, body {
+            margin: 0;
+            height: 100%;
+            background: #141414;
+            color: #fff;
+            font-family: Sora, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overflow: hidden;
+        }
+
+        #loader {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 28px;
+            background: #141414;
+            text-align: center;
+        }
+
+        #loader h1 { margin: 0; color: #fff; font-weight: 600; }
+
+        .spinner {
+            border: 8px solid transparent;
+            border-top: 8px solid #fff;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #status { margin: 0; min-height: 1.2em; font-size: .85rem; color: rgba(255, 255, 255, .5); }
+        #retry { color: #fff; font-size: .85rem; cursor: pointer; text-decoration: underline; }
+
+        #bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 44px;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 0 8px;
+            background: #1b1b1b;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        #bar button, #tab {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            border: 0;
+            border-radius: 8px;
+            background: transparent;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        #bar button:hover, #tab:hover { background: #2c2c2c; }
+
+        svg {
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        #form { flex: 1; margin: 0 4px; }
+
+        #url {
+            width: 100%;
+            height: 32px;
+            padding: 0 14px;
+            border: 1px solid #2a2a2a;
+            border-radius: 16px;
+            outline: none;
+            background: #0f0f0f;
+            color: #fff;
+            font: inherit;
+            font-size: .9rem;
+        }
+
+        #url:focus { border-color: #fff; }
+
+        #prog {
+            position: absolute;
+            left: 0;
+            bottom: -1px;
+            height: 2px;
+            width: 0;
+            background: #fff;
+            opacity: 0;
+        }
+
+        #view {
+            position: fixed;
+            top: 44px;
+            left: 0;
+            width: 100%;
+            height: calc(100% - 44px);
+            border: 0;
+            background: #141414;
+        }
+
+        #tab {
+            position: fixed;
+            top: 6px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            display: none;
+            background: rgba(27, 27, 27, .9);
+            border: 1px solid #2a2a2a;
+        }
+
+        .nobar #bar { display: none; }
+        .nobar #view { top: 0; height: 100%; }
+        .nobar #tab { display: flex; }
+    </style>
+</head>
+<body>
+    <div id="loader">
+        <h1>deploying proxy...</h1>
+        <div class="spinner"></div>
+        <p id="status">starting...</p>
+        <a id="retry" hidden>retry</a>
+    </div>
+
+    <div id="bar" hidden>
+        <button id="back" title="back"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <button id="forward" title="forward"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+        <button id="reload" title="reload"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.5-5.8"/><path d="M20 4v5h-5"/></svg></button>
+        <button id="home" title="home"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h4v-6h4v6h4V10"/></svg></button>
+        <form id="form" autocomplete="off">
+            <input id="url" type="text" placeholder="search or enter a url" spellcheck="false" autocorrect="off" autocapitalize="off">
+        </form>
+        <button id="full" title="fullscreen"><svg viewBox="0 0 24 24"><path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/></svg></button>
+        <button id="hide" title="hide bar"><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></button>
+        <div id="prog"></div>
+    </div>
+
+    <button id="tab" title="show bar"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+
+    <iframe id="view" hidden allow="autoplay; fullscreen; clipboard-read; clipboard-write"></iframe>
+
+    <script type="module" src="embed.js"></script>
+</body>
+</html>
