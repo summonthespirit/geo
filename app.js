@@ -109,7 +109,7 @@ try {
     );
   }
   const serviceworker = navigator.serviceWorker.controller ?? registration.active;
-  if (!serviceworker) throw new Error('The service worker did not become active');
+  if (!serviceworker) throw new Error('the service worker did not become active.');
 
   status.textContent = 'loading engine…';
   for (const src of ['scram/scramjet.js', 'controller/controller.api.js']) {

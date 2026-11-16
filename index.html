@@ -3,8 +3,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Google</title>
+  <link rel="icon" href="https://google.com/favicon.ico">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <script src="cloak.js"></script>
   <style>
-  :root {
+    :root {
         --bg-dark: #0f141c;
         --surface: rgba(22, 29, 41, 0.85);
         --border: #2a384d;
@@ -247,12 +250,13 @@ body:has(#browser.visible) #ads {
       z-index: 25;
       opacity: 0;
       border-radius: 0 2px 2px 0;
+      
+      body:has(#browser.visible) > :not(#browser):not(script):not(style):not(link):not(noscript),
+html:has(#browser.visible) > :not(head):not(body) {
+  display: none !important;
+}
     }
   </style>
-  <link rel="icon" href="https://google.com/favicon.ico">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-  <script src="cloak.js"></script>
-  <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@100..800&amp;display=swap" rel="stylesheet">
@@ -273,7 +277,7 @@ body:has(#browser.visible) #ads {
   <form id="search">
     <input id="url" type="text" class="search-input search" placeholder="search the web or enter a url." autocomplete="off" autocorrect="off" spellcheck="false">
   </form>
-<div id="controls"
+
   
   <p id="status"></p>
 
