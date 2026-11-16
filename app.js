@@ -96,18 +96,19 @@ async function makeTransport(method, wisp) {
   return new Client({ wisp });
 }
 
-// boot: try {
-//   if (!navigator.onLine) {
-//     status.style.display = '';
-//     status.textContent = 'you are offline: the proxy needs internet (games still work)';
-//     handleSearch = () => {
-//       status.style.display = '';
-//       status.textContent = 'you are offline: reconnect to browse';
-//     };
-//     pendingQuery = null;
-//     window.addEventListener('online', () => location.reload(), { once: true });
-//     break boot;
-//   }
+boot: try {
+if (!navigator.onLine) {
+status.style.display = '';
+status.textContent = 'you are offline: the proxy needs internet (games still work)';
+handleSearch = () => {
+status.style.display = '';
+status.textContent = 'you are offline: reconnect to browse';
+};
+pendingQuery = null;
+window.addEventListener('online', () => location.reload(), { once: true });
+break boot;
+}
+}
 
   status.textContent = 'registering service worker…';
   const registration = await navigator.serviceWorker.register(BASE + 'sw.js', {
@@ -266,6 +267,7 @@ async function makeTransport(method, wisp) {
     pendingQuery = null;
     handleSearch(q);
   }
+  
   catch (err) {
   status.style.display = '';
   status.style.color = '#f87171';
