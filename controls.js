@@ -1,6 +1,5 @@
 export function attachControls(o) {
     var iframe = o.iframe;
-    var dir = o.icons || 'img/';
     var last = '';
 
     var css = document.createElement('style');
@@ -9,7 +8,7 @@ export function attachControls(o) {
         '#fish-bar *{box-sizing:border-box}',
         '#fish-bar button{all:unset;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;color:#fff;cursor:pointer;flex:none}',
         '#fish-bar button:hover{background:#243044}',
-        '#fish-bar img,#fish-tab img{width:18px;height:18px;display:block;pointer-events:none}',
+        '#fish-bar svg,#fish-tab svg{width:18px;height:18px;display:block;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}',
         '#fish-bar form{flex:1;margin:0 4px;display:block}',
         '#fish-bar input{all:unset;display:block;width:100%;height:32px;padding:0 14px;border:1px solid #2a384d;border-radius:16px;background:#0a0e14;color:#fff;font-size:.9rem;box-sizing:border-box}',
         '#fish-bar input:focus{border-color:#fff}',
@@ -25,8 +24,18 @@ export function attachControls(o) {
 
     var bar = document.createElement('div');
     bar.id = 'fish-bar';
+    var paths = {
+        back: '<path d="M15 6l-6 6 6 6"/>',
+        forward: '<path d="M9 6l6 6-6 6"/>',
+        reload: '<path d="M20 12a8 8 0 1 1-2.5-5.8"/><path d="M20 4v5h-5"/>',
+        home: '<path d="M4 11l8-7 8 7"/><path d="M6 10v10h4v-6h4v6h4V10"/>',
+        fullscreen: '<path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/>',
+        hide: '<path d="M6 15l6-6 6 6"/>',
+        show: '<path d="M6 9l6 6 6-6"/>'
+    };
+
     function icon(n) {
-        return '<img src="' + dir + n + '.svg" alt="' + n + '" draggable="false">';
+        return '<svg viewBox="0 0 24 24">' + paths[n] + '</svg>';
     }
 
     bar.innerHTML =
