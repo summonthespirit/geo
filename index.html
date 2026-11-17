@@ -287,11 +287,11 @@ html:has(#browser.visible) > :not(head):not(body) {
       <h4>transport</h4>
     <br>
       <label>
-        <input type="radio" name="transport" value="libcurl"> libcurl
+        <input type="radio" name="transport" value="libcurl" checked=""> libcurl
       </label>
       <br>
       <label>
-        <input type="radio" name="transport" value="epoxy" checked=""> epoxy (default)
+        <input type="radio" name="transport" value="epoxy"> epoxy
       </label>
     <br>
       <h4>search engine</h4>
@@ -306,7 +306,6 @@ html:has(#browser.visible) > :not(head):not(body) {
       <h4>tab cloak</h4>
       <select id="cloak" style="width:100%;">
         <option value="aboutblank">about:blank</option>
-        <option value="blob">blob url</option>
         <option value="off">off</option>
       </select>
       <small style="color:var(--text-muted);">applies next time the site opens</small>
@@ -316,6 +315,311 @@ html:has(#browser.visible) > :not(head):not(body) {
   <iframe id="browser" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads" allow="autoplay; fullscreen"></iframe>
   <div id="load-bar"></div>
 
-  <script src="app.js" type="module"></script>
+  <script type="module">
+  import { chooseWisp } from './wisp-check.js';
+import { attachControls } from './controls.js';
+
+const status = document.getElementById('status');
+const bgVideo = document.getElementById('background-video');
+
+bgVideo.play().catch(() => {
+  window.addEventListener('click', () => { bgVideo.play(); }, { once: true });
+});
+
+const settings = document.getElementById('settings');
+const gear = document.getElementById('gear');
+const overlay = document.getElementById('overlay');
+const transports = document.querySelectorAll('input[name="transport"]');
+const searchEnginePicker = document.getElementById('searchEnginePicker');
+const iframe = document.getElementById('browser');
+const titleDiv = document.querySelector('.title');
+const searchForm = document.getElementById('search');
+const urlInput = document.getElementById('url');
+const loadBar = document.getElementById('load-bar');
+
+gear.onclick = () => { overlay.classList.toggle('active'); settings.classList.toggle('open'); };
+overlay.onclick = e => { if (e.target === overlay) { overlay.classList.remove('active'); settings.classList.remove('open'); } };
+document.onkeydown = e => { if (e.key === 'Escape') { overlay.classList.remove('active'); settings.classList.remove('open'); } };
+
+let pendingQuery = null;
+let handleSearch = null;
+searchForm.addEventListener('submit', event => {
+  event.preventDefault();
+  const q = urlInput.value.trim();
+  if (!q) return;
+  if (handleSearch) {
+    handleSearch(q);
+  } else {
+    pendingQuery = q;
+    status.style.display = '';
+    status.textContent = 'starting up… your search will open when ready';
+  }
+});
+
+function startLoadBar() {
+  loadBar.style.transition = 'none';
+  loadBar.style.width = '0%';
+  loadBar.style.opacity = '1';
+  void loadBar.offsetWidth;
+  loadBar.style.transition = 'width 0.3s ease';
+  loadBar.style.width = '85%';
+}
+
+function finishLoadBar() {
+  loadBar.style.width = '100%';
+  setTimeout(() => {
+    loadBar.style.opacity = '0';
+    setTimeout(() => { loadBar.style.width = '0%'; }, 300);
+  }, 200);
+}
+
+const BASE = new URL('./', document.baseURI).pathname;
+const abs = p => new URL(p, document.baseURI).href;
+const host = (() => {
+  try {
+    if (window.top !== window.self && window.frameElement && window.frameElement.hasAttribute('data-svghost')) return window.parent;
+  } catch {}
+  return window;
+})();
+const WISP_SERVERS = [
+  'wss://w.oneyplaysbestf.art/',
+  'wss://wisp.mercurywork.shop/wisp/',
+  'wss://wisp.mercurywork.shop/',
+  'wss://wisp-85822.wasmer.app/',
+  'wss://arctic.lat/wisp/',
+  'wss://anura.pro/',
+  'wss://arctic.lat/_q/',
+  'wss://wisp.freewisp.org/',
+  'wss://gointospace.app/wisp/',
+  'wss://edu.robert.rest/'
+];
+const DEFAULT_WISP = WISP_SERVERS[0];
+const DEFAULT_TRANSPORT = 'libcurl';
+
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
+
+const getSavedTransport = () => {
+  const t = store.get('fish-transport');
+  return t === 'epoxy' || t === 'libcurl' ? t : DEFAULT_TRANSPORT;
+};
+const getSavedWisp = () => store.get('fish-wisp') || DEFAULT_WISP;
+
+const loadScript = src => new Promise((resolve, reject) => {
+  const s = document.createElement('script');
+  s.src = src;
+  s.onload = resolve;
+  s.onerror = () => reject(new Error('failed to load ' + src));
+  document.head.append(s);
+});
+
+async function makeTransport(method, wisp) {
+  const mod = await import(BASE + method + '/index.mjs');
+  const Client = mod.default;
+  return new Client({ wisp });
+}
+
+boot: try {
+  if (!navigator.onLine) {
+    status.style.display = '';
+    status.textContent = 'you are offline: the proxy needs internet (games still work)';
+    handleSearch = () => {
+      status.style.display = '';
+      status.textContent = 'you are offline: reconnect to browse';
+    };
+    pendingQuery = null;
+    window.addEventListener('online', () => location.reload(), { once: true });
+    break boot;
+  }
+
+  status.textContent = 'registering service worker…';
+  const registration = await navigator.serviceWorker.register(BASE + 'sw.js', {
+    scope: BASE,
+    updateViaCache: 'none',
+  });
+  await navigator.serviceWorker.ready;
+
+  if (!navigator.serviceWorker.controller) {
+    await new Promise(resolve =>
+      navigator.serviceWorker.addEventListener('controllerchange', resolve, { once: true })
+    );
+  }
+  const serviceworker = navigator.serviceWorker.controller ?? registration.active;
+  if (!serviceworker) throw new Error('the service worker did not become active.');
+
+  status.textContent = 'loading engine…';
+  for (const src of ['scram/scramjet.js', 'controller/controller.api.js']) {
+    await loadScript(BASE + src);
+  }
+  const api = window.$scramjetController;
+
+  let utils = null;
+  for (const name of ['scramjet-utils.mjs', 'scramjet-utils.js']) {
+    try {
+      const mod = await import(BASE + 'utils/' + name);
+      utils = { ...(mod.default ?? {}), ...mod };
+      break;
+    } catch (err) {
+      console.warn('utils import failed for', name, err);
+    }
+  }
+  if (!utils) console.warn('scramjet-utils not loaded: plugins disabled');
+
+  status.textContent = 'connecting transport…';
+  let currentTransport = getSavedTransport();
+  status.textContent = 'checking wisp servers…';
+  const picked = await chooseWisp({
+    servers: [store.get('fish-wisp'), ...WISP_SERVERS],
+    onStatus: t => { status.style.display = ''; status.textContent = t; },
+  });
+  let WISP = picked.url;
+  if (picked.manual) store.set('fish-wisp', WISP);
+  let transport;
+  try {
+    transport = await makeTransport(currentTransport, WISP);
+  } catch (err) {
+    console.warn('transport failed, falling back to epoxy', err);
+    currentTransport = 'epoxy';
+    store.set('fish-transport', 'epoxy');
+    transport = await makeTransport('epoxy', WISP);
+  }
+
+  status.textContent = 'starting controller…';
+  const controller = new api.Controller({
+    serviceworker,
+    transport,
+    config: {
+      prefix: abs(BASE + '~/sj/'),
+      scramjetPath: abs(BASE + 'scram/scramjet.js'),
+      wasmPath: abs(BASE + 'scram/scramjet.wasm'),
+      injectPath: abs(BASE + 'controller/controller.inject.js'),
+    },
+  });
+  await controller.wait();
+
+  setInterval(() => {
+    navigator.serviceWorker.controller?.postMessage('keepalive');
+  }, 15000);
+
+  const plugins = [];
+  if (utils?.UrlWatcherPlugin) plugins.push(new utils.UrlWatcherPlugin(() => finishLoadBar()));
+  const frame = controller.createFrame(iframe, { plugins });
+
+  const radioCheck = document.querySelector(`input[name="transport"][value="${currentTransport}"]`);
+  if (radioCheck) radioCheck.checked = true;
+  searchEnginePicker.value = store.get('selectedSearchEngine') || 'brave';
+
+  status.textContent = 'ready';
+  setTimeout(() => { status.style.display = 'none'; }, 1000);
+
+  const searchTemplates = {
+    google: 'https://www.google.com/search?q=%s',
+    bing: 'https://www.bing.com/search?q=%s',
+    duckduckgo: 'https://duckduckgo.com/?q=%s',
+    brave: 'https://search.brave.com/search?q=%s',
+  };
+
+  function search(input) {
+    if (!input) return '';
+    try { return new URL(input).toString(); } catch {}
+    try {
+      const url = new URL(`http://${input}`);
+      if (url.hostname.includes('.')) return url.toString();
+    } 
+    catch {}
+    const engine = store.get('selectedSearchEngine') || 'brave';
+    const template = searchTemplates[engine] || searchTemplates.brave;
+    return template.replace('%s', encodeURIComponent(input));
+  }
+
+  async function applyTransport() {
+    const next = await makeTransport(currentTransport, WISP);
+    await controller.setTransport(next);
+  }
+
+  transports.forEach(radio => {
+    radio.addEventListener('change', async event => {
+      currentTransport = event.target.value;
+      store.set('fish-transport', currentTransport);
+      await applyTransport();
+    });
+  });
+
+  searchEnginePicker.addEventListener('change', event => {
+    store.set('selectedSearchEngine', event.target.value);
+  });
+
+  iframe.addEventListener('load', finishLoadBar);
+
+  handleSearch = query => {
+    bgVideo.pause();
+    bgVideo.muted = true;
+
+    const target = search(query);
+
+    titleDiv.style.display = 'none';
+    searchForm.style.position = 'fixed';
+    searchForm.style.top = '15px';
+    searchForm.style.left = '2rem';
+    searchForm.style.transform = 'none';
+
+    startLoadBar();
+    iframe.classList.add('visible');
+    frame.go(target);
+  };
+
+  let hashed = '';
+  const fromHash = () => {
+    let h = host.location.hash.slice(1);
+    try { h = decodeURIComponent(h); } catch {}
+    return h.trim();
+  };
+  const openHash = () => {
+    const h = fromHash();
+    if (h && h !== hashed) {
+      hashed = h;
+      handleSearch(h);
+    }
+  };
+  host.addEventListener('hashchange', openHash);
+
+  attachControls({
+    iframe,
+    go: q => handleSearch(q),
+    onurl: u => {
+      hashed = u;
+      try { host.history.replaceState(null, '', '#' + u); } catch {}
+    },
+    home: () => {
+      hashed = '';
+      try { host.history.replaceState(null, '', host.location.pathname + host.location.search); } catch {}
+      iframe.classList.remove('visible');
+      iframe.src = 'about:blank';
+      titleDiv.style.display = '';
+      searchForm.style.position = '';
+      searchForm.style.top = '';
+      searchForm.style.left = '';
+      searchForm.style.transform = '';
+      bgVideo.muted = false;
+      bgVideo.play().catch(() => {});
+    },
+  });
+
+  if (pendingQuery) {
+    const q = pendingQuery;
+    pendingQuery = null;
+    handleSearch(q);
+  } else {
+    openHash();
+  }
+} catch (err) {
+  status.style.display = '';
+  status.style.color = '#f87171';
+  status.textContent = 'error: ' + err.message;
+  console.error('init error:', err);
+}
+  </script>
 </body>
 </html>
