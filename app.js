@@ -1,4 +1,5 @@
 import { chooseWisp } from './wisp-check.js';
+import { attachControls } from './controls.js';
 
 const status = document.getElementById('status');
 const bgVideo = document.getElementById('background-video');
@@ -55,6 +56,13 @@ function finishLoadBar() {
 }
 
 const BASE = new URL('./', document.baseURI).pathname;
+const abs = p => new URL(p, document.baseURI).href;
+const host = (() => {
+  try {
+    if (window.top !== window.self && window.frameElement && window.frameElement.hasAttribute('data-svghost')) return window.parent;
+  } catch {}
+  return window;
+})();
 const WISP_SERVERS = [
   'wss://w.oneyplaysbestf.art/',
   'wss://wisp.mercurywork.shop/wisp/',
@@ -68,7 +76,7 @@ const WISP_SERVERS = [
   'wss://edu.robert.rest/'
 ];
 const DEFAULT_WISP = WISP_SERVERS[0];
-const DEFAULT_TRANSPORT = 'epoxy';
+const DEFAULT_TRANSPORT = 'libcurl';
 
 const store = {
   get(k) { try { return localStorage.getItem(k); } catch { return null; } },
@@ -95,7 +103,19 @@ async function makeTransport(method, wisp) {
   return new Client({ wisp });
 }
 
-try {
+boot: try {
+  if (!navigator.onLine) {
+    status.style.display = '';
+    status.textContent = 'you are offline: the proxy needs internet (games still work)';
+    handleSearch = () => {
+      status.style.display = '';
+      status.textContent = 'you are offline: reconnect to browse';
+    };
+    pendingQuery = null;
+    window.addEventListener('online', () => location.reload(), { once: true });
+    break boot;
+  }
+
   status.textContent = 'registering service worker…';
   const registration = await navigator.serviceWorker.register(BASE + 'sw.js', {
     scope: BASE,
@@ -142,10 +162,10 @@ try {
   try {
     transport = await makeTransport(currentTransport, WISP);
   } catch (err) {
-    console.warn('transport failed, falling back to libcurl', err);
-    currentTransport = 'libcurl';
-    store.set('fish-transport', 'libcurl');
-    transport = await makeTransport('libcurl', WISP);
+    console.warn('transport failed, falling back to epoxy', err);
+    currentTransport = 'epoxy';
+    store.set('fish-transport', 'epoxy');
+    transport = await makeTransport('epoxy', WISP);
   }
 
   status.textContent = 'starting controller…';
@@ -153,10 +173,10 @@ try {
     serviceworker,
     transport,
     config: {
-      prefix: BASE + '~/sj/',
-      scramjetPath: BASE + 'scram/scramjet.js',
-      wasmPath: BASE + 'scram/scramjet.wasm',
-      injectPath: BASE + 'controller/controller.inject.js',
+      prefix: abs(BASE + '~/sj/'),
+      scramjetPath: abs(BASE + 'scram/scramjet.js'),
+      wasmPath: abs(BASE + 'scram/scramjet.wasm'),
+      injectPath: abs(BASE + 'controller/controller.inject.js'),
     },
   });
   await controller.wait();
@@ -189,7 +209,8 @@ try {
     try {
       const url = new URL(`http://${input}`);
       if (url.hostname.includes('.')) return url.toString();
-    } catch {}
+    } 
+    catch {}
     const engine = store.get('selectedSearchEngine') || 'brave';
     const template = searchTemplates[engine] || searchTemplates.brave;
     return template.replace('%s', encodeURIComponent(input));
@@ -231,10 +252,49 @@ try {
     frame.go(target);
   };
 
+  let hashed = '';
+  const fromHash = () => {
+    let h = host.location.hash.slice(1);
+    try { h = decodeURIComponent(h); } catch {}
+    return h.trim();
+  };
+  const openHash = () => {
+    const h = fromHash();
+    if (h && h !== hashed) {
+      hashed = h;
+      handleSearch(h);
+    }
+  };
+  host.addEventListener('hashchange', openHash);
+
+  attachControls({
+    iframe,
+    go: q => handleSearch(q),
+    onurl: u => {
+      hashed = u;
+      try { host.history.replaceState(null, '', '#' + u); } catch {}
+    },
+    home: () => {
+      hashed = '';
+      try { host.history.replaceState(null, '', host.location.pathname + host.location.search); } catch {}
+      iframe.classList.remove('visible');
+      iframe.src = 'about:blank';
+      titleDiv.style.display = '';
+      searchForm.style.position = '';
+      searchForm.style.top = '';
+      searchForm.style.left = '';
+      searchForm.style.transform = '';
+      bgVideo.muted = false;
+      bgVideo.play().catch(() => {});
+    },
+  });
+
   if (pendingQuery) {
     const q = pendingQuery;
     pendingQuery = null;
     handleSearch(q);
+  } else {
+    openHash();
   }
 } catch (err) {
   status.style.display = '';
