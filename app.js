@@ -1,5 +1,4 @@
 import { chooseWisp } from './wisp-check.js';
-import { attachControls } from './controls.js';
 
 const status = document.getElementById('status');
 const bgVideo = document.getElementById('background-video');
@@ -56,13 +55,6 @@ function finishLoadBar() {
 }
 
 const BASE = new URL('./', document.baseURI).pathname;
-const abs = p => new URL(p, document.baseURI).href;
-const host = (() => {
-  try {
-    if (window.top !== window.self && window.frameElement && window.frameElement.hasAttribute('data-svghost')) return window.parent;
-  } catch {}
-  return window;
-})();
 const WISP_SERVERS = [
   'wss://w.oneyplaysbestf.art/',
   'wss://wisp.mercurywork.shop/wisp/',
@@ -103,19 +95,7 @@ async function makeTransport(method, wisp) {
   return new Client({ wisp });
 }
 
-boot: try {
-  if (!navigator.onLine) {
-    status.style.display = '';
-    status.textContent = 'you are offline: the proxy needs internet (games still work)';
-    handleSearch = () => {
-      status.style.display = '';
-      status.textContent = 'you are offline: reconnect to browse';
-    };
-    pendingQuery = null;
-    window.addEventListener('online', () => location.reload(), { once: true });
-    break boot;
-  }
-
+try {
   status.textContent = 'registering service worker…';
   const registration = await navigator.serviceWorker.register(BASE + 'sw.js', {
     scope: BASE,
@@ -173,10 +153,10 @@ boot: try {
     serviceworker,
     transport,
     config: {
-      prefix: abs(BASE + '~/sj/'),
-      scramjetPath: abs(BASE + 'scram/scramjet.js'),
-      wasmPath: abs(BASE + 'scram/scramjet.wasm'),
-      injectPath: abs(BASE + 'controller/controller.inject.js'),
+      prefix: BASE + '~/sj/',
+      scramjetPath: BASE + 'scram/scramjet.js',
+      wasmPath: BASE + 'scram/scramjet.wasm',
+      injectPath: BASE + 'controller/controller.inject.js',
     },
   });
   await controller.wait();
@@ -209,8 +189,7 @@ boot: try {
     try {
       const url = new URL(`http://${input}`);
       if (url.hostname.includes('.')) return url.toString();
-    } 
-    catch {}
+    } catch {}
     const engine = store.get('selectedSearchEngine') || 'brave';
     const template = searchTemplates[engine] || searchTemplates.brave;
     return template.replace('%s', encodeURIComponent(input));
@@ -252,49 +231,10 @@ boot: try {
     frame.go(target);
   };
 
-  let hashed = '';
-  const fromHash = () => {
-    let h = host.location.hash.slice(1);
-    try { h = decodeURIComponent(h); } catch {}
-    return h.trim();
-  };
-  const openHash = () => {
-    const h = fromHash();
-    if (h && h !== hashed) {
-      hashed = h;
-      handleSearch(h);
-    }
-  };
-  host.addEventListener('hashchange', openHash);
-
-  attachControls({
-    iframe,
-    go: q => handleSearch(q),
-    onurl: u => {
-      hashed = u;
-      try { host.history.replaceState(null, '', '#' + u); } catch {}
-    },
-    home: () => {
-      hashed = '';
-      try { host.history.replaceState(null, '', host.location.pathname + host.location.search); } catch {}
-      iframe.classList.remove('visible');
-      iframe.src = 'about:blank';
-      titleDiv.style.display = '';
-      searchForm.style.position = '';
-      searchForm.style.top = '';
-      searchForm.style.left = '';
-      searchForm.style.transform = '';
-      bgVideo.muted = false;
-      bgVideo.play().catch(() => {});
-    },
-  });
-
   if (pendingQuery) {
     const q = pendingQuery;
     pendingQuery = null;
     handleSearch(q);
-  } else {
-    openHash();
   }
 } catch (err) {
   status.style.display = '';
